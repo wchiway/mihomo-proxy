@@ -1,5 +1,5 @@
 /**
- * simple-mihomo — 极简业务分流版 v1.0
+ * simple-mihomo — 极简业务分流版 v1.1
  * ------------------------------------------------------------------
  * mihomo-proxy.js 的极简姊妹版：保留全部业务分流与 DNS/TUN 优化，
  * 但策略组只有三个，节点不做地区分组，简洁好理解：
@@ -216,9 +216,11 @@ const STATIC_RULES = [
   `RULE-SET,notion,${GROUPS.AI}`,
   `RULE-SET,category-ai,${GROUPS.AI}`,
 
-  // Google 生态（顺序关键！google 全球必须先于 google-cn 直连，
-  // 否则 connectivitycheck.gstatic.com / fonts.googleapis.com 等
-  // 全球域名被强制直连 → YouTube 报未联网 / 页面白屏）
+  // Google 生态（顺序关键！rules 是有序数组，先匹配先停止）
+  // google-cn 列表混有 gstatic.com / googleapis.com 等全球域名，
+  // 若 google-cn,DIRECT 放在 google 之前会强制直连 → YouTube 报未联网。
+  // 实际效果：google 先消耗所有全球域名，google-cn 仅命中
+  // 不在 google 集合中的纯国区域名（google.cn / 265.com 等）。
   `RULE-SET,googlefcm,${GROUPS.ALL}`, // FCM 走代理防推送断流
   `RULE-SET,youtube,${GROUPS.ALL}`,
   `RULE-SET,google,${GROUPS.ALL}`,
@@ -443,8 +445,9 @@ const applyDns = (cfg) => {
     "proxy-server-nameserver": DNS_SERVERS.CN_DOH,
 
     // Smart 分流：多规则集 key 的 rule-set: 前缀只写一次（内核按首个
-    // 冒号切前缀再按逗号切名称）；国际族必须在国内族之前（gstatic 等
-    // 双列表域名需优先命中国际 DoH，避免国内 DNS 污染）。
+    // 冒号切前缀再按逗号切名称）。
+    // 注：nameserver-policy 是 YAML Map，key 顺序无规范保证。此处
+    // 各 key 引用的 rule-set 域名集合互不重叠，不存在顺序依赖。
     "nameserver-policy": {
       "rule-set:private": ["system", ...DNS_SERVERS.CN_DOH],
       "rule-set:google,googlefcm,youtube,gfw,telegram,spotify,category-ai,openai,anthropic,perplexity,cursor,notion":
@@ -458,7 +461,7 @@ const applyDns = (cfg) => {
     ...(cfg.hosts || {}),
     "dns.alidns.com": ["223.5.5.5", "223.6.6.6"],
     "doh.pub": ["1.12.12.12", "120.53.53.53"],
-    "services.googleapis.cn": ["services.googleapis.com"],
+    "services.googleapis.cn": "services.googleapis.com",
     "+.mcdn.bilivideo.com": ["0.0.0.0"],
     "+.mcdn.bilivideo.cn": ["0.0.0.0"],
   };
@@ -491,8 +494,8 @@ const applySniffer = (cfg) => {
     "override-destination": false, // 保护 FCM 等长连接
     sniff: {
       HTTP: { ports: [80, "8080-8880"], "override-destination": false },
-      TLS: { ports: [443, 8443] },
-      QUIC: { ports: [443, 8443] },
+      TLS: { ports: [443, 8443], "override-destination": true },
+      QUIC: { ports: [443, 8443], "override-destination": true },
     },
     "skip-domain": ["Mijia Cloud", "+.push.apple.com", "+.oray.com"],
   };

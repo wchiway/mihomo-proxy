@@ -1,6 +1,6 @@
 # mihomo-proxy
 
-mihomo（Clash Meta）配置增强脚本 · Ultimate Stable Edition v2.1
+mihomo（Clash Meta）配置增强脚本 · Ultimate Stable Edition v2.2
 
 在 Clash Verge Rev / Sparkle 等客户端中作为**覆写脚本**加载，自动完成节点分组、服务级分流、DNS 防泄露分流与 TUN/Sniffer 网络优化。主要面向国内复杂网络（含校园网）与多地区机场订阅，目标是 Google 全家桶 / AI / 流媒体的高稳定性与零 DNS 泄露。
 
@@ -152,6 +152,14 @@ Plan.md            # v2.1 重构需求文档
 ---
 
 ## 更新日志
+
+### v2.2（2026-07）
+
+- 修复 hosts 中 `services.googleapis.cn` CNAME 映射使用数组语法（域名别名不支持数组，可能被内核忽略）
+- 修复 Sniffer TLS/QUIC 的 `override-destination` 未显式启用，导致纯 IP 连接场景域名分流规则失效
+- 修正 `nameserver-policy` 注释中关于 key 顺序的错误描述（YAML Map 无序，实际依靠 rule-set 互斥而非顺序）
+- 修正 `google-cn` 规则注释，明确其仅覆盖不在 google 集合中的纯国区域名
+- 统一两个脚本的 `mergeRules` 行为（完整版改用 `startsWith("MATCH,")` 匹配，与极简版一致）
 
 ### v2.1（2026-07）
 

@@ -1,5 +1,5 @@
 /**
- * mihomo-proxy — Ultimate Stable Edition v2.1
+ * mihomo-proxy — Ultimate Stable Edition v2.2
  * ------------------------------------------------------------------
  * 面向 Clash Verge Rev / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
  *
@@ -446,12 +446,13 @@ const STATIC_RULES = [
   "RULE-SET,notion,AI",
   "RULE-SET,category-ai,AI",
 
-  // Google 生态（顺序关键！）
-  // google-cn.list 中混有 connectivitycheck.gstatic.com / fonts.googleapis.com /
+  // Google 生态（顺序关键！rules 是有序数组，先匹配先停止）
+  // google-cn 列表中混有 connectivitycheck.gstatic.com / fonts.googleapis.com /
   // fonts.gstatic.com / dl.google.com 等全球关键域名（历史上有国内 CDN，现已不可达）。
   // 若 google-cn,DIRECT 放在 google 之前，会把上述域名强制直连 → YouTube 报
-  // "未联网"、Chrome 商店卡死、NotebookLM 白屏。故先匹配全球 google 走代理，
-  // google-cn 仅兜底真正的国区专用域（google.cn / 265.com / *-cn 变体 / pki.goog）。
+  // "未联网"、Chrome 商店卡死、NotebookLM 白屏。
+  // 实际效果：google 先匹配并消耗了所有全球域名，google-cn 仅能命中
+  // 不在 google 集合中的纯国区域名（google.cn / 265.com / pki.goog 等）。
   "RULE-SET,googlefcm,Google", // FCM 走代理（关键修正）
   "RULE-SET,youtube,YouTube",
   "RULE-SET,google,Google",
@@ -498,8 +499,8 @@ const STATIC_RULES = [
 const mergeRules = (baseRules = [], extraRules = []) => {
   const extra = Array.isArray(extraRules) ? extraRules.filter(Boolean) : [];
   if (!extra.length) return baseRules.slice();
-  const matchIndex = baseRules.findIndex(
-    (rule) => String(rule).trim().toUpperCase() === "MATCH,MAIN",
+  const matchIndex = baseRules.findIndex((rule) =>
+    String(rule).trim().toUpperCase().startsWith("MATCH,"),
   );
   if (matchIndex === -1) return uniq([...baseRules, ...extra]);
   return uniq([
@@ -876,9 +877,10 @@ const applyDns = (cfg) => {
     // 后接逗号分隔的名称（mihomo config.go parseNameServerPolicy 按
     // 首个冒号切分前缀，再按逗号切分名称；重复前缀会被解析成
     // 名为 "rule-set" 的规则集导致 "not found rule-set" 启动错误）。
-    // 顺序关键：policy 按书写顺序匹配。gstatic/googleapis 等域名同时存在于
-    // google 与 google-cn 集合，必须让国际 DoH 先匹配，否则经国内 DNS 解析
-    // 会拿到污染/失效 IP（参见 MetaCubeX/mihomo#489 同类案例）。
+    // 注：nameserver-policy 是 YAML Map（字典），key 顺序在规范层面
+    // 无保证。此处各 key 引用的 rule-set 域名集合**互不重叠**，因此
+    // 不存在顺序依赖——任一域名只会命中唯一的 key。真正依赖顺序的
+    // 是 rules 数组（见上方 google vs google-cn 的注释）。
     "nameserver-policy": {
       // 内网/私有域名 → 系统 DNS 优先（校园网内网仅系统 DNS 可解析）
       "rule-set:private": ["system", ...DNS_SERVERS.CN_DOH],
@@ -896,7 +898,7 @@ const applyDns = (cfg) => {
     ...(cfg.hosts || {}),
     "dns.alidns.com": ["223.5.5.5", "223.6.6.6"],
     "doh.pub": ["1.12.12.12", "120.53.53.53"],
-    "services.googleapis.cn": ["services.googleapis.com"],
+    "services.googleapis.cn": "services.googleapis.com",
     "+.mcdn.bilivideo.com": ["0.0.0.0"], // 屏蔽 B 站 P2P CDN 回源
     "+.mcdn.bilivideo.cn": ["0.0.0.0"],
   };
@@ -932,8 +934,8 @@ const applySniffer = (cfg) => {
     "override-destination": false,
     sniff: {
       HTTP: { ports: [80, "8080-8880"], "override-destination": false },
-      TLS: { ports: [443, 8443] },
-      QUIC: { ports: [443, 8443] }, // 覆盖 HTTP/3
+      TLS: { ports: [443, 8443], "override-destination": true },
+      QUIC: { ports: [443, 8443], "override-destination": true },
     },
     // 跳过常见无需嗅探的 CDN/内网域名
     "skip-domain": ["Mijia Cloud", "+.push.apple.com", "+.oray.com"],
