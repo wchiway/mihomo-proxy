@@ -5,7 +5,7 @@
 /** 强制直连的域名（后缀匹配） */
 export const BYPASS_DOMAINS: string[] = ["example.com", "example.org"];
 
-/** 强制走代理(main)的域名（精确匹配） */
+/** 强制走代理的域名（精确匹配；完整版出口为 main 组，极简版为「全部」组） */
 export const FORCE_PROXY_DOMAINS: string[] = ["test.com", "test.org"];
 
 /** 需要从订阅中剔除的节点名过滤器（正则） */

@@ -1,5 +1,5 @@
 /**
-* mihomo-proxy — Ultimate Stable Edition v2.2
+* mihomo-proxy — Ultimate Stable Edition v2.3
 * ------------------------------------------------------------------
 * 面向 Clash Verge Rev / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
 * 本文件由 vite build 自动生成，请勿手改；源码见 src/ 目录。
@@ -14,7 +14,7 @@ var __mihomoProxy = (function(exports) {
 	//#region src/user-config.ts
 	/** 强制直连的域名（后缀匹配） */
 	var BYPASS_DOMAINS = ["example.com", "example.org"];
-	/** 强制走代理(main)的域名（精确匹配） */
+	/** 强制走代理的域名（精确匹配；完整版出口为 main 组，极简版为「全部」组） */
 	var FORCE_PROXY_DOMAINS = ["test.com", "test.org"];
 	/** 需要从订阅中剔除的节点名过滤器（正则） */
 	var CUSTOM_FILTER = /示例占位符1|示例占位符2|示例占位符3/i;
@@ -493,48 +493,48 @@ var __mihomoProxy = (function(exports) {
 	//#endregion
 	//#region src/rules.ts
 	/**
-	* 静态规则集。分流目标对应 §7 生成的策略组名。
+	* 构建静态规则。分流目标由 targets 注入。
 	* 设计要点：
-	*  - Google FCM 走代理(Google 组)，不再 DIRECT（Plan 4）。
+	*  - Google FCM 走代理，不再 DIRECT（Plan 4）。
 	*  - Google / YouTube / AI / Telegram / Steam / Apple / Microsoft 各自独立分流。
 	*  - 国区子集(*-cn)直连，全球集走对应代理组。
 	*/
-	var STATIC_RULES = [
-		"RULE-SET,category-ads-all,REJECT",
+	var buildStaticRules = (t) => [
+		`RULE-SET,category-ads-all,${t.adblock}`,
 		...uniq(BYPASS_DOMAINS).map((d) => `DOMAIN-SUFFIX,${d},DIRECT`),
-		...uniq(FORCE_PROXY_DOMAINS).map((d) => `DOMAIN,${d},main`),
+		...uniq(FORCE_PROXY_DOMAINS).map((d) => `DOMAIN,${d},${t.proxy}`),
 		"RULE-SET,cloudflare,DIRECT",
 		"RULE-SET,private,DIRECT",
 		"RULE-SET,private-ip,DIRECT,no-resolve",
-		"RULE-SET,openai,AI",
-		"RULE-SET,anthropic,AI",
-		"RULE-SET,perplexity,AI",
-		"RULE-SET,cursor,AI",
-		"RULE-SET,notion,AI",
-		"RULE-SET,category-ai,AI",
-		"RULE-SET,googlefcm,Google",
-		"RULE-SET,youtube,YouTube",
-		"RULE-SET,google,Google",
-		"RULE-SET,google-ip,Google,no-resolve",
+		`RULE-SET,openai,${t.ai}`,
+		`RULE-SET,anthropic,${t.ai}`,
+		`RULE-SET,perplexity,${t.ai}`,
+		`RULE-SET,cursor,${t.ai}`,
+		`RULE-SET,notion,${t.ai}`,
+		`RULE-SET,category-ai,${t.ai}`,
+		`RULE-SET,googlefcm,${t.google}`,
+		`RULE-SET,youtube,${t.youtube}`,
+		`RULE-SET,google,${t.google}`,
+		`RULE-SET,google-ip,${t.google},no-resolve`,
 		"RULE-SET,google-cn,DIRECT",
-		"RULE-SET,telegram,Telegram",
-		"RULE-SET,telegram-ip,Telegram,no-resolve",
+		`RULE-SET,telegram,${t.telegram}`,
+		`RULE-SET,telegram-ip,${t.telegram},no-resolve`,
 		"DOMAIN-SUFFIX,steamcontent.com,DIRECT",
 		"DOMAIN-SUFFIX,steamserver.net,DIRECT",
 		"DOMAIN-SUFFIX,steampipe.akamaized.net,DIRECT",
 		"RULE-SET,steam-cn,DIRECT",
-		"RULE-SET,steam,Steam",
+		`RULE-SET,steam,${t.steam}`,
 		"RULE-SET,apple-cn,DIRECT",
-		"RULE-SET,apple,Apple",
+		`RULE-SET,apple,${t.apple}`,
 		"RULE-SET,microsoft-cn,DIRECT",
-		"RULE-SET,microsoft,Microsoft",
-		"RULE-SET,spotify,main",
+		`RULE-SET,microsoft,${t.microsoft}`,
+		`RULE-SET,spotify,${t.proxy}`,
 		"RULE-SET,connectivity-check,DIRECT",
 		"RULE-SET,category-ntp,DIRECT",
-		"RULE-SET,gfw,main",
+		`RULE-SET,gfw,${t.proxy}`,
 		"RULE-SET,cn,DIRECT",
 		"RULE-SET,cn-ip,DIRECT,no-resolve",
-		"MATCH,main"
+		`MATCH,${t.proxy}`
 	];
 	/**
 	* 合并用户既有规则中的 DIRECT 规则到 MATCH 之前，保持向后兼容。
@@ -666,7 +666,7 @@ var __mihomoProxy = (function(exports) {
 			add("URL Test - All", "url-test", allNames, "Auto.png", SETTINGS.URL_TEST_EXTRA);
 			add("All", "select", ["URL Test - All", ...allNames], "Auto.png");
 		}
-		SETTINGS.REGION_ORDER.forEach((rName) => {
+		regionEntries.forEach((rName) => {
 			const region = activeRegionMap.get(rName);
 			if (!region) return;
 			add(`URL Test - ${region.name}`, "url-test", region.proxies, region.icon, SETTINGS.URL_TEST_EXTRA);
@@ -846,6 +846,17 @@ var __mihomoProxy = (function(exports) {
 	};
 	//#endregion
 	//#region src/main.ts
+	var STATIC_RULES = buildStaticRules({
+		adblock: "REJECT",
+		ai: "AI",
+		google: "Google",
+		youtube: "YouTube",
+		telegram: "Telegram",
+		steam: "Steam",
+		apple: "Apple",
+		microsoft: "Microsoft",
+		proxy: "main"
+	});
 	function main(config) {
 		config = ensureConfigObject(config);
 		const originalProxies = getOriginalProxies(config);

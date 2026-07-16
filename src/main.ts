@@ -3,8 +3,12 @@ import { SETTINGS } from "./settings";
 import { uniq } from "./utils";
 import { REGIONS } from "./regions";
 import { buildRuleProviders } from "./rule-providers";
-import { STATIC_RULES, mergeRules, pickDirectRules } from "./rules";
 import {
+  buildStaticRules,
+  mergeRules,
+  pickDirectRules,
+  type RuleTargets,
+} from "./rules";import {
   buildAllAiProxyList,
   classifyProxiesByRegion,
   ensureConfigObject,
@@ -21,6 +25,21 @@ import type { ClashConfig } from "./types";
 // ============================================================
 // 10. Main —— 主流程
 // ============================================================
+
+/** 完整版分流出口：每类服务对应 §7 生成的独立策略组 */
+const FULL_RULE_TARGETS: RuleTargets = {
+  adblock: "REJECT",
+  ai: "AI",
+  google: "Google",
+  youtube: "YouTube",
+  telegram: "Telegram",
+  steam: "Steam",
+  apple: "Apple",
+  microsoft: "Microsoft",
+  proxy: "main",
+};
+
+const STATIC_RULES = buildStaticRules(FULL_RULE_TARGETS);
 
 export function main(config: ClashConfig): ClashConfig {
   config = ensureConfigObject(config);

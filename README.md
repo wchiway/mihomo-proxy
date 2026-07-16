@@ -1,6 +1,6 @@
 # mihomo-proxy
 
-mihomo（Clash Meta）配置增强脚本 · Ultimate Stable Edition v2.2
+mihomo（Clash Meta）配置增强脚本 · Ultimate Stable Edition v2.3
 
 在 Clash Verge Rev / Sparkle 等客户端中作为**覆写脚本**加载，自动完成节点分组、服务级分流、DNS 防泄露分流与 TUN/Sniffer 网络优化。主要面向国内复杂网络（含校园网）与多地区机场订阅，目标是 Google 全家桶 / AI / 流媒体的高稳定性与零 DNS 泄露。
 
@@ -98,16 +98,22 @@ https://raw.githubusercontent.com/wchiway/mihomo-proxy/refs/heads/main/simple-mi
 
 ### 自定义
 
-两个脚本头部均有用户自定义区：
+自定义常量位于 `src/user-config.ts`（两版共享）：
 
-```js
+```ts
 /** 强制直连的域名（后缀匹配） */
-const BYPASS_DOMAINS = ["example.com", "example.org"];
-/** 强制走代理的域名（精确匹配） */
-const FORCE_PROXY_DOMAINS = ["test.com", "test.org"];
+export const BYPASS_DOMAINS = ["example.com", "example.org"];
+/** 强制走代理的域名（精确匹配；完整版走 main 组，极简版走「全部」组） */
+export const FORCE_PROXY_DOMAINS = ["test.com", "test.org"];
 /** 需要从订阅中剔除的节点名过滤器（正则） */
-const CUSTOM_FILTER = /示例占位符1|示例占位符2|示例占位符3/i;
+export const CUSTOM_FILTER = /示例占位符1|示例占位符2|示例占位符3/i;
 ```
+
+两种修改方式：
+
+1. **推荐**：改 `src/user-config.ts` 后 `pnpm build` 重新生成（改动进入两份产物且不会丢失）
+2. **临时**：直接编辑产物 JS 顶部的同名常量（在 IIFE 内第一段）——注意
+   下次 `pnpm build` 会覆盖手改内容
 
 ---
 
@@ -143,15 +149,76 @@ const CUSTOM_FILTER = /示例占位符1|示例占位符2|示例占位符3/i;
 ## 项目结构
 
 ```text
-mihomo-proxy.js    # 完整版：Config / Utils / Regions / RuleProviders / RuleBuilder /
-                   #         Classifier / ProxyBuilder / DNSBuilder / RuntimeBuilder / Main
-simple-mihomo.js   # 极简版：全部 / AI / 广告拦截 三组，分流与 DNS 架构同完整版
-Plan.md            # v2.1 重构需求文档
+mihomo-proxy.js    # 完整版（构建产物，请勿手改）
+simple-mihomo.js   # 极简版（构建产物，请勿手改）
+src/               # 两版共享的 TypeScript 源码
+├── index.ts       #   完整版打包入口
+├── simple.ts      #   极简版打包入口
+├── main.ts        #   完整版主流程（服务级独立策略组）
+├── simple-main.ts #   极简版主流程（全部 / AI / 广告拦截 三组）
+├── user-config.ts #   用户自定义区（两版共享）
+├── settings.ts    #   常量配置（SETTINGS / DNS_SERVERS / Fake-IP）
+├── utils.ts       #   工具函数（倍率/线路解析缓存等）
+├── regions.ts     #   地区定义（完整版用）
+├── rule-providers.ts # 规则集（key ↔ 远端文件名解耦）
+├── rules.ts       #   分流规则骨架（出口目标参数化，两版注入各自策略组名）
+├── proxies.ts     #   节点分类
+├── proxy-groups.ts#   完整版策略组生成
+├── dns.ts         #   DNS 防泄露架构
+├── runtime.ts     #   Runtime / Sniffer / TUN
+└── types.ts       #   类型定义
+tests/             # vitest 单元测试（工具函数 / 规则 / 节点分类）
+scripts/verify.mjs        # 第 1 级校验：node:vm 冒烟断言 + YAML 导出
+scripts/verify-kernel.mjs # 第 2 级校验：真实 mihomo 内核 -t
+vite.config.ts     # Vite 8 库模式双产物构建配置
+.github/workflows/ci.yml  # CI：类型检查 → 单测 → 构建 → 产物一致性 → 内核校验
 ```
 
 ---
 
+## 构建与开发（Vite 8 全 Rust 工具链）
+
+两份产物均由 **Vite 8 + TypeScript** 从同一份 `src/` 构建生成——规则骨架、
+规则集、DNS、TUN 在源码层共享，**构建期即保证两版一致，不再手工同步**。
+Vite 8 已用 Rolldown（打包）+ Oxc（转换/压缩）的全 Rust 工具链取代
+esbuild + Rollup,本项目直接使用其原生配置（`rolldownOptions`）。
+
+```bash
+pnpm install        # 安装依赖（Node 20+ / pnpm 11+，lock 文件已入库）
+pnpm typecheck      # tsc 类型检查
+pnpm test           # vitest 单元测试
+pnpm build          # 双产物构建 → node:vm 冒烟断言 → 同步到仓库根目录
+pnpm verify:kernel  # 真实内核 -t 校验（需本地 mihomo 或设 MIHOMO_BIN）
+```
+
+构建约束（面向 Clash Verge Rev / Sparkle 的 boa_engine 运行时）：
+
+- 产物为**单文件普通脚本**（非 ESM），以 IIFE 打包并由 footer 注入顶层
+  `main(config, profileName)`，满足 `{script}; main(config, name)` 调用约定
+- target ES2020（boa 支持 90%+ 最新 ES 规范），`minify: false` 保留全部
+  中文注释，产物可读可审计
+- 双级校验后才同步产物：第 1 级 `node:vm` 裸沙箱断言（DNS 防泄露铁律、
+  规则集引用一致性、双版规则骨架一致、策略组完整性等），第 2 级真实
+  mihomo 内核 `-t` 配置测试；CI 对每次 push 全量执行并校验产物与源码一致
+
+---
+
 ## 更新日志
+
+### v2.3（2026-07）
+
+- 工程化：拆分为 `src/` TypeScript 模块，Vite 8（Rolldown + Oxc
+  全 Rust 工具链，不再使用 esbuild/Rollup）库模式打包回单文件
+- **双版本统一构建**：极简版（v1.2）与完整版共享同一份规则骨架 /
+  规则集 / DNS / TUN 源码，出口目标参数化注入，构建期保证两版一致
+  （彻底解决历史上两文件手工同步导致的漂移）
+- 新增 Steam 游戏下载 CDN 直连（steamcontent.com / steamserver.net /
+  steampipe.akamaized.net，前置于 steam 规则集），DNS 同步指向国内 DoH
+  以解析就近 CDN 节点；极简版同步获得该修正
+- 双级校验：`node:vm` 冒烟断言（含双版规则骨架一致性）+ 真实内核
+  `mihomo -t`（已过 v1.19.25）；vitest 单元测试 36 项
+- CI：类型检查 → 单测 → 构建 → 产物与源码一致性 → 内核校验；
+  pnpm-lock.yaml 入库保证可复现构建
 
 ### v2.2（2026-07）
 

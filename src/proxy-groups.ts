@@ -68,7 +68,7 @@ export const buildProxyGroups = ({
   }
 
   // ---- 地区组（每地区一个 url-test + 一个 select） ----
-  SETTINGS.REGION_ORDER.forEach((rName) => {
+  regionEntries.forEach((rName) => {
     const region = activeRegionMap.get(rName);
     if (!region) return;
     add(

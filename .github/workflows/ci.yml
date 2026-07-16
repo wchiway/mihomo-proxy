@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖（锁定版本）
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: 单元测试
+        run: pnpm test
+
+      - name: 构建双产物 + node:vm 冒烟断言
+        run: pnpm build
+
+      # 防两类事故：改了 src 忘记 build 就 push；有人手改生成物
+      - name: 产物与源码一致性
+        run: git diff --exit-code mihomo-proxy.js simple-mihomo.js
+
+      - name: 真实内核 -t 校验
+        run: |
+          TAG=$(curl -fsSL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r .tag_name)
+          curl -fsSL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/${TAG}/mihomo-linux-amd64-${TAG}.gz"
+          gunzip mihomo.gz && chmod +x mihomo
+          MIHOMO_BIN=./mihomo pnpm verify:kernel

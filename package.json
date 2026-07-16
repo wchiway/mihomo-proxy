@@ -1,17 +1,21 @@
 {
   "name": "mihomo-proxy",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "2.3.0",
+  "description": "Clash Verge Rev / Mihomo 配置增强脚本（vite + ts 模块化构建，双产物）",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "vite build && node scripts/verify.mjs",
+    "test": "vitest run",
+    "build": "vite build && vite build --mode simple && node scripts/verify.mjs",
     "verify": "node scripts/verify.mjs",
+    "verify:kernel": "node scripts/verify-kernel.mjs",
     "prettier": "prettier --write \"**/*.{js,ts,json,md}\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
@@ -21,9 +25,11 @@
   },
   "type": "module",
   "devDependencies": {
+    "@types/node": "^22.0.0",
+    "js-yaml": "^4.1.0",
     "prettier": "3.9.4",
     "typescript": "^5.7.0",
-    "vite": "^8.0.0",
-    "@types/node": "^22.0.0"
+    "vite": "^8.1.4",
+    "vitest": "^4.0.0"
   }
 }

@@ -1,0 +1,6 @@
+allowBuilds:
+  # Vite 8 全 Rust 工具链(Rolldown+Oxc+LightningCSS)已不使用 esbuild，
+  # 其仅作为 vite 的可选依赖存在，postinstall 无需执行
+  esbuild: false
+minimumReleaseAgeExclude:
+  - prettier@3.9.4
