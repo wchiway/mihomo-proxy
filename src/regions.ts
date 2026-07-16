@@ -1,0 +1,143 @@
+import { buildRegex } from "./utils";
+import type { CompiledRegion, Region } from "./types";
+
+// ============================================================
+// 3. Regions —— 地区定义（新增 EU / AU，保留 AS）
+// ============================================================
+
+const REGION_DEFS: Region[] = [
+  {
+    name: "HK",
+    pattern: ["香港", "HK", "HKG", "HONGKONG", "HONG KONG"],
+    icon: "Hong_Kong.png",
+  },
+  {
+    name: "TW",
+    pattern: ["台湾", "台北", "新北", "TW", "TWN", "TAIWAN", "TAIPEI"],
+    icon: "Taiwan.png",
+  },
+  {
+    name: "JP",
+    pattern: ["日本", "东京", "大阪", "JP", "JPN", "JAPAN", "TOKYO", "OSAKA"],
+    icon: "Japan.png",
+  },
+  {
+    name: "SG",
+    pattern: ["新加坡", "狮城", "SG", "SGP", "SINGAPORE"],
+    icon: "Singapore.png",
+  },
+  {
+    name: "KR",
+    pattern: ["韩国", "首尔", "KR", "KOR", "KOREA", "SEOUL"],
+    icon: "Korea.png",
+  },
+  {
+    name: "US",
+    pattern: [
+      "美国",
+      "纽约",
+      "旧金山",
+      "洛杉矶",
+      "西雅图",
+      "芝加哥",
+      "US",
+      "USA",
+      "NEWYORK",
+      "NEW YORK",
+      "SANFRANCISCO",
+      "SAN FRANCISCO",
+      "LOSANGELES",
+      "LOS ANGELES",
+      "SEATTLE",
+      "CHICAGO",
+    ],
+    icon: "United_States.png",
+  },
+  {
+    name: "EU",
+    pattern: [
+      "欧洲",
+      "德国",
+      "法国",
+      "英国",
+      "荷兰",
+      "俄罗斯",
+      "意大利",
+      "西班牙",
+      "瑞典",
+      "瑞士",
+      "波兰",
+      "芬兰",
+      "土耳其",
+      "爱尔兰",
+      "奥地利",
+      "法兰克福",
+      "伦敦",
+      "EU",
+      "DE",
+      "FR",
+      "UK",
+      "GB",
+      "NL",
+      "RU",
+      "IT",
+      "ES",
+      "SE",
+      "CH",
+      "PL",
+      "FI",
+      "TR",
+      "IE",
+      "AT",
+      "GERMANY",
+      "FRANCE",
+      "LONDON",
+      "FRANKFURT",
+    ],
+    icon: "European_Union.png",
+  },
+  {
+    name: "AU",
+    pattern: [
+      "澳大利亚",
+      "澳洲",
+      "悉尼",
+      "墨尔本",
+      "AU",
+      "AUS",
+      "AUSTRALIA",
+      "SYDNEY",
+      "MELBOURNE",
+    ],
+    icon: "Australia.png",
+  },
+  {
+    name: "AS",
+    pattern: [
+      "越南",
+      "泰国",
+      "马来西亚",
+      "印尼",
+      "菲律宾",
+      "印度",
+      "VN",
+      "TH",
+      "MY",
+      "ID",
+      "PH",
+      "IN",
+      "VIETNAM",
+      "THAILAND",
+      "MALAYSIA",
+      "INDONESIA",
+      "PHILIPPINES",
+      "MANILA",
+    ],
+    icon: "Asia_Map.png",
+  },
+];
+
+export const buildRegions = (): CompiledRegion[] =>
+  REGION_DEFS.map((r) => ({ ...r, regex: buildRegex(r.pattern) }));
+
+export const REGIONS = buildRegions();
