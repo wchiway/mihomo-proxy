@@ -1,0 +1,29 @@
+{
+  "name": "mihomo-proxy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "vite build && node scripts/verify.mjs",
+    "verify": "node scripts/verify.mjs",
+    "prettier": "prettier --write \"**/*.{js,ts,json,md}\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.6.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "prettier": "3.9.4",
+    "typescript": "^5.7.0",
+    "vite": "^8.0.0",
+    "@types/node": "^22.0.0"
+  }
+}
