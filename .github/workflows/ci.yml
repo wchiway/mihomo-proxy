@@ -34,7 +34,16 @@ jobs:
       - name: 构建双产物 + node:vm 冒烟断言
         run: pnpm build
 
-      # main 分支：构建后自动提交产物；PR：仅检查一致性
+      # 内核校验必须先于产物提交：raw 链接即发布渠道，只有内核能抓到的
+      # 错误（如 not found rule-set）不能在校验前就推上 main
+      - name: 真实内核 -t 校验
+        run: |
+          TAG=$(curl -fsSL -H "Authorization: Bearer ${{ github.token }}" https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r .tag_name)
+          curl -fsSL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/${TAG}/mihomo-linux-amd64-${TAG}.gz"
+          gunzip mihomo.gz && chmod +x mihomo
+          MIHOMO_BIN=./mihomo pnpm verify:kernel
+
+      # main 分支：全部校验通过后自动提交产物；PR：仅检查一致性
       - name: 提交构建产物
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
@@ -47,10 +56,3 @@ jobs:
       - name: 产物与源码一致性（PR 检查）
         if: github.event_name == 'pull_request'
         run: git diff --exit-code mihomo-proxy.js simple-mihomo.js
-
-      - name: 真实内核 -t 校验
-        run: |
-          TAG=$(curl -fsSL https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r .tag_name)
-          curl -fsSL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/${TAG}/mihomo-linux-amd64-${TAG}.gz"
-          gunzip mihomo.gz && chmod +x mihomo
-          MIHOMO_BIN=./mihomo pnpm verify:kernel
