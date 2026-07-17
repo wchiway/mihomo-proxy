@@ -156,6 +156,22 @@ export const buildProxyGroups = ({
     add("Steam", "select", withDirect, "Steam.png");
     add("Apple", "select", withDirect, "Apple.png");
     add("Microsoft", "select", withDirect, "Microsoft.png");
+  } else {
+    // 零节点回退：规则出口引用的业务组必须始终存在（对齐极简版
+    // 「全部」组的处理），否则空订阅/拉取失败时内核 -t 直接报错
+    const fallbackGroups: Array<[string, string]> = [
+      ["main", "Available.png"],
+      ["AI", "ChatGPT.png"],
+      ["Google", "Google_Search.png"],
+      ["YouTube", "YouTube.png"],
+      ["Telegram", "Telegram.png"],
+      ["Steam", "Steam.png"],
+      ["Apple", "Apple.png"],
+      ["Microsoft", "Microsoft.png"],
+    ];
+    fallbackGroups.forEach(([name, icon]) =>
+      add(name, "select", ["DIRECT"], icon),
+    );
   }
 
   // ---- GLOBAL 全局入口（汇总所有组） ----

@@ -47,7 +47,7 @@ const version = execFileSync(kernel, ["-v"], { encoding: "utf8" }).split("\n")[0
 console.log(`内核：${version}`);
 
 let failed = false;
-for (const file of ["test-full.yaml", "test-simple.yaml"]) {
+for (const file of ["test-full.yaml", "test-simple.yaml", "test-full-empty.yaml", "test-simple-empty.yaml"]) {
   const cfg = path.join(distDir, file);
   if (!existsSync(cfg)) {
     console.error(`✗ ${file} 不存在，请先运行 pnpm build`);

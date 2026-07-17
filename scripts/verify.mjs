@@ -57,6 +57,20 @@ const runScript = (file, cfg) => {
   ).runInContext(sandbox);
 };
 
+/** 每条规则的出口必须是存在的策略组 / DIRECT / REJECT / 节点名（零节点配置也必须满足） */
+const assertRuleTargets = (tag, result) => {
+  const groupNames = new Set((result["proxy-groups"] ?? []).map((g) => g.name));
+  const names = (result.proxies ?? []).map((p) => p.name);
+  const validTargets = new Set([...groupNames, ...names, "DIRECT", "REJECT", "REJECT-DROP", "PASS"]);
+  const badTargets = (result.rules ?? [])
+    .map((r) => {
+      const parts = String(r).split(",");
+      return parts[0] === "MATCH" ? parts[1] : parts[2];
+    })
+    .filter((t) => t && !validTargets.has(t));
+  assert(badTargets.length === 0, `[${tag}] 规则出口均有对应策略组（异常：${badTargets.join(",") || "无"}）`);
+};
+
 /** 两个版本共同的断言（DNS 防泄露铁律 / 规则一致性 / 节点处理） */
 const assertCommon = (tag, result) => {
   assert(typeof result === "object" && !!result, `[${tag}] main 返回对象`);
@@ -99,16 +113,7 @@ const assertCommon = (tag, result) => {
   const names = (result.proxies ?? []).map((p) => p.name);
   assert(new Set(names).size === names.length, `[${tag}] 节点重名已去冲突`);
 
-  // 每条规则的出口必须是存在的策略组 / DIRECT / REJECT / 节点名
-  const groupNames = new Set((result["proxy-groups"] ?? []).map((g) => g.name));
-  const validTargets = new Set([...groupNames, ...names, "DIRECT", "REJECT", "REJECT-DROP", "PASS"]);
-  const badTargets = rules
-    .map((r) => {
-      const parts = String(r).split(",");
-      return parts[0] === "MATCH" ? parts[1] : parts[2];
-    })
-    .filter((t) => t && !validTargets.has(t));
-  assert(badTargets.length === 0, `[${tag}] 规则出口均有对应策略组（异常：${badTargets.join(",") || "无"}）`);
+  assertRuleTargets(tag, result);
 };
 
 // ============ 完整版 ============
@@ -125,6 +130,7 @@ assertCommon("full", full);
   assert(aiGroup && !aiGroup.proxies.includes("HK"), "[full] AI 组排除 HK");
   const emptyFull = runScript("mihomo-proxy.js", {});
   assert((emptyFull["proxy-groups"] ?? []).some((g) => g.name === "GLOBAL"), "[full] 无节点时仍产出 GLOBAL");
+  assertRuleTargets("full-empty", emptyFull);
 }
 
 // ============ 极简版 ============
@@ -164,6 +170,7 @@ assertCommon("simple", simple);
     emptyAll && JSON.stringify(emptyAll.proxies) === JSON.stringify(["DIRECT"]),
     "[simple] 无节点时「全部」回退 DIRECT",
   );
+  assertRuleTargets("simple-empty", emptySimple);
 }
 
 // ============ 导出内核校验用 YAML + 同步产物 ============
@@ -173,6 +180,9 @@ if (failed) {
 } else {
   writeFileSync(new URL("../dist/test-full.yaml", import.meta.url), yaml.dump(full, { lineWidth: -1 }));
   writeFileSync(new URL("../dist/test-simple.yaml", import.meta.url), yaml.dump(simple, { lineWidth: -1 }));
+  // 零节点边界配置也导出：业务组回退 DIRECT 后必须同样能过内核 -t
+  writeFileSync(new URL("../dist/test-full-empty.yaml", import.meta.url), yaml.dump(runScript("mihomo-proxy.js", {}), { lineWidth: -1 }));
+  writeFileSync(new URL("../dist/test-simple-empty.yaml", import.meta.url), yaml.dump(runScript("simple-mihomo.js", {}), { lineWidth: -1 }));
   copyFileSync(new URL("../dist/mihomo-proxy.js", import.meta.url), new URL("../mihomo-proxy.js", import.meta.url));
   copyFileSync(new URL("../dist/simple-mihomo.js", import.meta.url), new URL("../simple-mihomo.js", import.meta.url));
   console.log("\n全部通过：产物已同步到仓库根目录，内核校验 YAML 已导出到 dist/。");
