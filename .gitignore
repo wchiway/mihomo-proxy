@@ -1,0 +1,4 @@
+node_modules/
+dist/
+bash.exe.stackdump
+.claude/settings.local.json
