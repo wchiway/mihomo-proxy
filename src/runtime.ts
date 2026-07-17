@@ -50,7 +50,7 @@ export const applyTun = (cfg: ClashConfig): void => {
     stack: "mixed",
     "auto-route": true,
     "auto-detect-interface": true,
-    "strict-route": true,
+    "strict-route": false, // 降级：减轻全流量接管的性能压力（卡顿修复）
     "endpoint-independent-nat": true, // 改善 P2P / 游戏 NAT（Plan 10）
     "dns-hijack": ["any:53", "tcp://any:53"],
     mtu: 1500, // 通用最优 MTU；弱网可下调至 1280

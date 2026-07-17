@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import { resolve } from "node:path";
 
 /**
- * 打包目标：Clash Verge Rev / Sparkle 的 boa_engine 运行时。
+ * 打包目标：Sparkle / Clash Verge Rev 等兼容客户端的 boa_engine 运行时。
  * 约束：
  *  - 产物必须是单文件普通脚本（非 ESM，boa 以 `{script}; main(config, name)` 求值）
  *  - 顶层作用域必须存在可调用的 `main` → 用 IIFE + footer 桥接
@@ -19,7 +19,7 @@ const FULL = {
   banner: `/**
  * mihomo-proxy — Ultimate Stable Edition v2.3
  * ------------------------------------------------------------------
- * 面向 Clash Verge Rev / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
+ * 面向 Sparkle / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
  * 本文件由 vite build 自动生成，请勿手改；源码见 src/ 目录。
  *
  * 仓库地址：https://github.com/wchiway/mihomo-proxy
@@ -72,7 +72,7 @@ export default defineConfig(({ mode }) => {
         output: {
           banner: variant.banner,
           footer: `
-// Clash Verge Rev (boa_engine) 入口桥接：脚本被求值后直接调用顶层 main
+// Sparkle / Clash Verge Rev (boa_engine) 入口桥接：脚本被求值后直接调用顶层 main
 function main(config, profileName) {
   return ${variant.name}.main(config, profileName);
 }`,

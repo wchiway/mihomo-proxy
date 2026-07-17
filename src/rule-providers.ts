@@ -79,13 +79,15 @@ export const buildRuleProviders = (): Record<string, any> => {
     };
   });
 
-  // Cloudflare 验证页（人机验证）直连，避免被代理影响
+  // Cloudflare 基础设施直连：
+  // - cloudflareinsights.com：Web Analytics 分析脚本，前置直连防 category-ads-all 误杀
+  // - challenges.cloudflare.com 不在此列，让其跟随主站路由以保持 IP 一致，
+  //   避免 Turnstile 验证时代理 IP 与直连 IP 不一致触发风控
   providers.cloudflare = {
     type: "inline",
     behavior: "classical",
     payload: [
-      "DOMAIN,challenges.cloudflare.com",
-      "DOMAIN-SUFFIX,cloudflarechallenge.com",
+      "DOMAIN-SUFFIX,cloudflareinsights.com",
     ],
   };
   return providers;

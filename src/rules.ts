@@ -39,7 +39,13 @@ export const buildStaticRules = (t: RuleTargets): string[] => [
   ...uniq(BYPASS_DOMAINS).map((d) => `DOMAIN-SUFFIX,${d},DIRECT`),
   ...uniq(FORCE_PROXY_DOMAINS).map((d) => `DOMAIN,${d},${t.proxy}`),
 
-  // 基础设施：Cloudflare 验证页 / 内网 直连
+  // 腾讯游戏 / WeGame 直连（防止 TUN 模式干扰游戏登录与联机）
+  "DOMAIN-SUFFIX,wegame.com.cn,DIRECT",
+  "DOMAIN-KEYWORD,wegame,DIRECT",
+  "DOMAIN-SUFFIX,igame.qq.com,DIRECT",
+  "DOMAIN-SUFFIX,tgp.qq.com,DIRECT",
+
+  // 基础设施：Cloudflare Analytics 直连（防广告规则误杀）/ 内网 直连
   "RULE-SET,cloudflare,DIRECT",
   "RULE-SET,private,DIRECT",
   "RULE-SET,private-ip,DIRECT,no-resolve",

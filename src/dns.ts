@@ -24,6 +24,11 @@ export const applyDns = (cfg: ClashConfig): void => {
     "+.local",
     "localhost",
     "*.localhost",
+    // 腾讯系（WeGame / QQ 登录 / 游戏平台）——防止 fake-ip 干扰客户端安全校验
+    "+.qq.com",
+    "+.tencent.com",
+    "+.qcloud.com",
+    "+.wegame.com.cn",
     // stun（WebRTC / 主机游戏 NAT 穿透）
     "+.stun.*.*",
     "+.stun.*.*.*",
@@ -45,7 +50,7 @@ export const applyDns = (cfg: ClashConfig): void => {
     ...dns,
     enable: true,
     listen: "0.0.0.0:1053",
-    ipv6: true,
+    ipv6: false, // 国内 IPv6 不稳定时关闭，减少 AAAA 查询超时导致的卡顿
     "cache-algorithm": "arc",
     "prefer-h3": false, // 官方明确：respect-rules 与 prefer-h3 不建议同开
     "use-hosts": true,
@@ -94,6 +99,11 @@ export const applyDns = (cfg: ClashConfig): void => {
     "nameserver-policy": {
       // 内网/私有域名 → 系统 DNS 优先（校园网内网仅系统 DNS 可解析）
       "rule-set:private": ["system", ...DNS_SERVERS.CN_DOH],
+      // 腾讯系域名走国内 DNS 解析（WeGame / QQ 登录等需真实 IP）
+      "+.qq.com": DNS_SERVERS.CN_DOH,
+      "+.tencent.com": DNS_SERVERS.CN_DOH,
+      "+.qcloud.com": DNS_SERVERS.CN_DOH,
+      "+.wegame.com.cn": DNS_SERVERS.CN_DOH,
       // 需翻墙域名族（Google/YouTube/AI/GFW/Telegram/Spotify）→ 国际 DoH
       "rule-set:google,googlefcm,youtube,gfw,telegram,spotify,category-ai,openai,anthropic,perplexity,cursor,notion":
         DNS_SERVERS.GLOBAL_DOH,
