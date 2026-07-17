@@ -1,7 +1,7 @@
 /**
 * mihomo-proxy — Ultimate Stable Edition v2.3
 * ------------------------------------------------------------------
-* 面向 Clash Verge Rev / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
+* 面向 Sparkle / 最新 Mihomo(Clash.Meta) 内核的配置增强脚本。
 * 本文件由 vite build 自动生成，请勿手改；源码见 src/ 目录。
 *
 * 仓库地址：https://github.com/wchiway/mihomo-proxy
@@ -486,7 +486,7 @@ var __mihomoProxy = (function(exports) {
 		providers.cloudflare = {
 			type: "inline",
 			behavior: "classical",
-			payload: ["DOMAIN,challenges.cloudflare.com", "DOMAIN-SUFFIX,cloudflarechallenge.com"]
+			payload: ["DOMAIN-SUFFIX,cloudflareinsights.com"]
 		};
 		return providers;
 	};
@@ -503,6 +503,10 @@ var __mihomoProxy = (function(exports) {
 		`RULE-SET,category-ads-all,${t.adblock}`,
 		...uniq(BYPASS_DOMAINS).map((d) => `DOMAIN-SUFFIX,${d},DIRECT`),
 		...uniq(FORCE_PROXY_DOMAINS).map((d) => `DOMAIN,${d},${t.proxy}`),
+		"DOMAIN-SUFFIX,wegame.com.cn,DIRECT",
+		"DOMAIN-KEYWORD,wegame,DIRECT",
+		"DOMAIN-SUFFIX,igame.qq.com,DIRECT",
+		"DOMAIN-SUFFIX,tgp.qq.com,DIRECT",
 		"RULE-SET,cloudflare,DIRECT",
 		"RULE-SET,private,DIRECT",
 		"RULE-SET,private-ip,DIRECT,no-resolve",
@@ -737,6 +741,10 @@ var __mihomoProxy = (function(exports) {
 			"+.local",
 			"localhost",
 			"*.localhost",
+			"+.qq.com",
+			"+.tencent.com",
+			"+.qcloud.com",
+			"+.wegame.com.cn",
 			"+.stun.*.*",
 			"+.stun.*.*.*",
 			"+.stun.*.*.*.*",
@@ -750,7 +758,7 @@ var __mihomoProxy = (function(exports) {
 			...dns,
 			enable: true,
 			listen: "0.0.0.0:1053",
-			ipv6: true,
+			ipv6: false,
 			"cache-algorithm": "arc",
 			"prefer-h3": false,
 			"use-hosts": true,
@@ -766,6 +774,10 @@ var __mihomoProxy = (function(exports) {
 			"proxy-server-nameserver": DNS_SERVERS.CN_DOH,
 			"nameserver-policy": {
 				"rule-set:private": ["system", ...DNS_SERVERS.CN_DOH],
+				"+.qq.com": DNS_SERVERS.CN_DOH,
+				"+.tencent.com": DNS_SERVERS.CN_DOH,
+				"+.qcloud.com": DNS_SERVERS.CN_DOH,
+				"+.wegame.com.cn": DNS_SERVERS.CN_DOH,
 				"rule-set:google,googlefcm,youtube,gfw,telegram,spotify,category-ai,openai,anthropic,perplexity,cursor,notion": DNS_SERVERS.GLOBAL_DOH,
 				"rule-set:category-ntp": ["system", ...DNS_SERVERS.CN_DOH],
 				"+.msftconnecttest.com": ["system", ...DNS_SERVERS.CN_DOH],
@@ -837,7 +849,7 @@ var __mihomoProxy = (function(exports) {
 			stack: "mixed",
 			"auto-route": true,
 			"auto-detect-interface": true,
-			"strict-route": true,
+			"strict-route": false,
 			"endpoint-independent-nat": true,
 			"dns-hijack": ["any:53", "tcp://any:53"],
 			mtu: 1500,
@@ -904,7 +916,7 @@ var __mihomoProxy = (function(exports) {
 	exports.main = main;
 	return exports;
 })({});
-// Clash Verge Rev (boa_engine) 入口桥接：脚本被求值后直接调用顶层 main
+// Sparkle / Clash Verge Rev (boa_engine) 入口桥接：脚本被求值后直接调用顶层 main
 function main(config, profileName) {
 	return __mihomoProxy.main(config, profileName);
 }
