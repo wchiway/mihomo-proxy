@@ -12,10 +12,10 @@
 var __mihomoProxy = (function(exports) {
 	Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 	//#region src/user-config.ts
-	/** 强制直连的域名（后缀匹配） */
-	var BYPASS_DOMAINS = ["example.com", "example.org"];
+	/** 强制直连的域名（后缀匹配），示例：["mycompany.com", "internal.example"] */
+	var BYPASS_DOMAINS = [];
 	/** 强制走代理的域名（精确匹配；完整版出口为 main 组，极简版为「全部」组） */
-	var FORCE_PROXY_DOMAINS = ["test.com", "test.org"];
+	var FORCE_PROXY_DOMAINS = [];
 	/** 需要从订阅中剔除的节点名过滤器（正则） */
 	var CUSTOM_FILTER = /示例占位符1|示例占位符2|示例占位符3/i;
 	//#endregion
@@ -709,7 +709,16 @@ var __mihomoProxy = (function(exports) {
 			add("Steam", "select", withDirect, "Steam.png");
 			add("Apple", "select", withDirect, "Apple.png");
 			add("Microsoft", "select", withDirect, "Microsoft.png");
-		}
+		} else [
+			["main", "Available.png"],
+			["AI", "ChatGPT.png"],
+			["Google", "Google_Search.png"],
+			["YouTube", "YouTube.png"],
+			["Telegram", "Telegram.png"],
+			["Steam", "Steam.png"],
+			["Apple", "Apple.png"],
+			["Microsoft", "Microsoft.png"]
+		].forEach(([name, icon]) => add(name, "select", ["DIRECT"], icon));
 		add("GLOBAL", "select", [
 			...hasNodes ? [
 				"main",
