@@ -32,8 +32,18 @@ jobs:
       - name: 构建双产物 + node:vm 冒烟断言
         run: pnpm build
 
-      # 防两类事故：改了 src 忘记 build 就 push；有人手改生成物
-      - name: 产物与源码一致性
+      # main 分支：构建后自动提交产物；PR：仅检查一致性
+      - name: 提交构建产物
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add mihomo-proxy.js simple-mihomo.js
+          git diff --cached --quiet || git commit -m "chore: 同步构建产物 [skip ci]"
+          git push
+
+      - name: 产物与源码一致性（PR 检查）
+        if: github.event_name == 'pull_request'
         run: git diff --exit-code mihomo-proxy.js simple-mihomo.js
 
       - name: 真实内核 -t 校验
